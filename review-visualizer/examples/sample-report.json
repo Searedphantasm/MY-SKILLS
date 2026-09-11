@@ -1,0 +1,92 @@
+{
+  "title": "Payment Retry Code Review",
+  "summary": "The review identifies a duplicate-charge risk in the payment retry flow, a missing regression test, and a readability concern in order payload construction.",
+  "source_label": "Pasted PR review",
+  "generated_at": null,
+  "merge_readiness": {
+    "status": "not_ready",
+    "reason": "The reviewer explicitly says the change should not be merged yet because the retry path can create duplicate charges."
+  },
+  "reviewed_files": [
+    { "path": "src/payments/retry.ts", "note": null },
+    { "path": "src/orders/create-order.ts", "note": null },
+    { "path": "src/orders/repository.ts", "note": "Mentioned positively." }
+  ],
+  "findings": [
+    {
+      "id": "F-001",
+      "title": "Retry can create duplicate charges",
+      "severity": "blocker",
+      "category": "bug",
+      "category_inferred": false,
+      "location": {
+        "file": "src/payments/retry.ts",
+        "line": "44-68",
+        "symbol": "retryPayment"
+      },
+      "problem": "The function retries after a timeout without checking whether the provider accepted the first request. A delayed provider response can therefore produce a second charge.",
+      "impact": "A customer may be charged twice for one order.",
+      "suggested_fix": "Send an idempotency key and query the first request before retrying.",
+      "before": "return provider.charge(input);",
+      "after": "return provider.charge(input, { idempotencyKey: order.id });",
+      "language": "ts",
+      "related_findings": [
+        { "id": "F-002", "relationship": "causes", "note": "The missing test leaves the duplicate-charge path unprotected." },
+        { "id": "F-003", "relationship": "related", "note": "Both paths construct provider requests differently." }
+      ],
+      "source_excerpt": null
+    },
+    {
+      "id": "F-002",
+      "title": "Missing delayed-success retry regression test",
+      "severity": "major",
+      "category": "test",
+      "category_inferred": false,
+      "location": {
+        "file": "src/payments/retry.ts",
+        "line": null,
+        "symbol": "retryPayment"
+      },
+      "problem": "There is no test for a provider timeout followed by a successful delayed response.",
+      "impact": null,
+      "suggested_fix": "Add a regression test covering that sequence.",
+      "before": null,
+      "after": null,
+      "language": null,
+      "related_findings": [
+        { "id": "F-001", "relationship": "related", "note": "The test should cover the duplicate-charge scenario." }
+      ],
+      "source_excerpt": null
+    },
+    {
+      "id": "F-003",
+      "title": "Validation and mapping are mixed",
+      "severity": "minor",
+      "category": "readability",
+      "category_inferred": false,
+      "location": {
+        "file": "src/orders/create-order.ts",
+        "line": null,
+        "symbol": "buildOrderPayload"
+      },
+      "problem": "The payload construction mixes validation and mapping.",
+      "impact": null,
+      "suggested_fix": "Extract validation into a separate function.",
+      "before": null,
+      "after": null,
+      "language": null,
+      "related_findings": [
+        { "id": "F-001", "relationship": "related", "note": "Both paths construct provider requests differently." }
+      ],
+      "source_excerpt": null
+    }
+  ],
+  "positives": [
+    {
+      "text": "The transaction boundary is clear and the rollback behavior is tested well.",
+      "file": "src/orders/repository.ts",
+      "location": null
+    }
+  ],
+  "unresolved_notes": []
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Form Creation"
+  short_description: "Design clearer accessible forms"
+  default_prompt: "Use $form-creation to design or review this form flow."

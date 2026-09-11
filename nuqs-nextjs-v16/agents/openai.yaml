@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nuqs Next.js v16"
+  short_description: "Typed URL state for Next.js"
+  default_prompt: "Use $nuqs-nextjs-v16 to implement or review typed URL query state in this Next.js App Router flow."

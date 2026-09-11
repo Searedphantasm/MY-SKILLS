@@ -1,0 +1,33 @@
+## Summary
+Changes requested. The payment retry path can create duplicate charges and should not be merged yet.
+
+## src/payments/retry.ts
+
+Blocker — bug — `retryPayment`, lines 44-68
+The function retries after a timeout without checking whether the provider accepted the first request. A delayed provider response can therefore produce a second charge.
+
+Suggested fix: send an idempotency key and query the first request before retrying.
+
+Before:
+```ts
+return provider.charge(input);
+```
+
+After:
+```ts
+return provider.charge(input, { idempotencyKey: order.id });
+```
+
+Major — test — `retryPayment`
+There is no test for a provider timeout followed by a successful delayed response. Add a regression test covering that sequence.
+
+## src/orders/create-order.ts
+
+Minor — readability — `buildOrderPayload`
+The payload construction mixes validation and mapping. Extract validation into a separate function.
+
+This is related to the retry issue because both paths construct provider requests differently.
+
+## What looks good
+
+The transaction boundary in `src/orders/repository.ts` is clear and the rollback behavior is tested well.
